@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-black: #09090b;
+  --color-brand-surface: #121215;
+  --color-brand-border: #27272a;
+  --color-brand-emerald: #10b981;
+  --color-brand-emerald-hover: #059669;
+  --color-brand-emerald-glow: rgba(16, 185, 129, 0.15);
+}
+
+/* Custom global styles */
+body {
+  background-color: var(--color-brand-black);
+  color: #f4f4f5;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
