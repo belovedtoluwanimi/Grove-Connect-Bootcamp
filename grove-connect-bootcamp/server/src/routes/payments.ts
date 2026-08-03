@@ -18,7 +18,7 @@ function getSupabaseAdmin() {
 
 // Course Pricing Single Source of Truth
 const COURSE_PRICES: Record<string, number> = {
-  'fullstack-kids': 20000,
+  'fullstack-kids': 100,
   'uiux-kids': 15000,
   'python-ai': 20000,
   'video-editing': 20000,
