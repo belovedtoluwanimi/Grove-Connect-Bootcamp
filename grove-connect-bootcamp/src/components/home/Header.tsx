@@ -69,7 +69,7 @@ export function Header() {
             /* Logged-In State Buttons */
             <div className="flex items-center gap-2">
               <Link
-                href="/dashboard/course-selection"
+                href="/dashboard"
                 className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-2"
               >
                 <LayoutDashboard className="w-4 h-4" /> Dashboard

@@ -38,7 +38,7 @@ function LoginForm() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?redirectTo=/dashboard/course-selection`,
+          redirectTo: `${window.location.origin}/auth/callback?redirectTo=/dashboard`,
         },
       });
 
@@ -64,7 +64,7 @@ function LoginForm() {
           },
         });
         if (error) throw error;
-        router.push('/dashboard/course-selection');
+        router.push('/dashboard');
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,

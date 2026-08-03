@@ -209,14 +209,14 @@ function PaymentStatusContent() {
         <div className="pt-4 border-t border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-xs text-zinc-400">
             <Mail className="w-4 h-4 text-emerald-400" />
-            <span>Questions? Email support@groveconnect.org</span>
+            <span>Questions? Email groveconn3ct22@gmail.com</span>
           </div>
 
           <Link
-            href="/dashboard/course-selection"
+            href="/dashboard"
             className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition-all"
           >
-            Return to Dashboard <ArrowRight className="w-4 h-4" />
+            View Paid Courses and Receipt <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
       </div>
