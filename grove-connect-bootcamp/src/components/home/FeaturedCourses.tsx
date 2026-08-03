@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Code, Palette, Cpu, ShieldAlert, ArrowRight, Zap } from 'lucide-react';
+import { Code, Palette, Cpu, ShieldAlert, ArrowRight, Zap, Play } from 'lucide-react';
 
 const COURSES = [
   {
@@ -12,19 +12,19 @@ const COURSES = [
     iconBg: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
     desc: 'Build real websites and web apps using HTML, CSS, JavaScript & React.',
     age: 'Ages 10–18',
-    price: '₦150,000',
+    price: '₦20,000',
   },
   {
     id: 'uiux-kids',
     icon: Palette,
-    title: 'UI/UX Product Design',
+    title: 'Graphic & Product Design',
     badge: 'Creative',
     color: 'from-purple-500/20 to-pink-500/10',
     borderColor: 'hover:border-purple-500/60',
     iconBg: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
     desc: 'Design mobile apps and prototypes using Figma and modern design principles.',
     age: 'Ages 10–18',
-    price: '₦120,000',
+    price: '₦15,000',
   },
   {
     id: 'python-ai',
@@ -36,19 +36,19 @@ const COURSES = [
     iconBg: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
     desc: 'Learn Python programming, data analytics, and build machine learning bots.',
     age: 'Ages 12–18',
-    price: '₦160,000',
+    price: '₦20,000',
   },
   {
-    id: 'cloud-cyber',
-    icon: ShieldAlert,
-    title: 'Cloud & Cyber Security',
+    id: 'video-editing',
+    icon: Play,
+    title: 'Video Editing',
     badge: 'Essential',
     color: 'from-cyan-500/20 to-blue-500/10',
     borderColor: 'hover:border-cyan-500/60',
     iconBg: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
     desc: 'Master network safety, ethical hacking concepts, and cloud tools.',
     age: 'Ages 12–18',
-    price: '₦180,000',
+    price: '₦20,000',
   },
 ];
 

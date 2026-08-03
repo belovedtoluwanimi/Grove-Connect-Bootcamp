@@ -21,6 +21,7 @@ import {
   LogOut,
   Loader2,
   AlertCircle,
+  Play,
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/clients';
 
@@ -63,7 +64,7 @@ const COURSES = [
     ageRange: 'Ages 12–18',
     price: 20000,
     duration: '6 Weeks (Sat & Sun)',
-    icon: Cloud,
+    icon: Play,
     description: 'Video editing, Social media video making, long form video',
   },
 ];
