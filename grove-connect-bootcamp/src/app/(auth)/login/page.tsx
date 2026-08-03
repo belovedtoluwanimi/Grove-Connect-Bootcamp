@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Sparkles,
   Mail,
@@ -10,6 +10,7 @@ import {
   ArrowRight,
   Loader2,
   AlertCircle,
+  Clock,
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/clients';
 
@@ -23,6 +24,9 @@ export default function LoginPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const reason = searchParams.get('reason');
+
   const supabase = createClient();
 
   // --- Google OAuth Handler ---
@@ -92,6 +96,15 @@ export default function LoginPage() {
       </div>
 
       <div className="w-full max-w-md bg-[#121215]/90 backdrop-blur-xl border border-zinc-800/80 rounded-2xl shadow-2xl p-6 sm:p-8 relative z-10">
+        
+        {/* --- Inactivity Timeout Message --- */}
+        {reason === 'timeout' && (
+          <div className="mb-6 px-4 py-3 bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded-2xl text-xs font-semibold flex items-center gap-2.5">
+            <Clock className="w-4 h-4 text-amber-400 flex-shrink-0" />
+            <span>You were signed out due to 30 minutes of inactivity. Please log back in.</span>
+          </div>
+        )}
+
         <div className="mb-6">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-semibold uppercase tracking-wider mb-2">
             <Sparkles className="w-3 h-3" /> {isSignUp ? 'Parent Registration' : 'Parent Login'}
