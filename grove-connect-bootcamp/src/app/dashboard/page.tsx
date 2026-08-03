@@ -4,8 +4,6 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   BookOpen,
-  CheckCircle2,
-  Clock,
   Download,
   Mail,
   MessageSquare,
@@ -15,6 +13,9 @@ import {
   ShieldCheck,
   X,
   PhoneCall,
+  CreditCard,
+  User,
+  Send,
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/clients';
 
@@ -24,19 +25,20 @@ interface PaidCourse {
   amount_paid: number;
   reference: string;
   payment_status: string;
+  payment_channel?: string; // e.g., 'card', 'bank_transfer', 'ussd'
   created_at: string;
   student_name?: string;
-  track_details?: string;
 }
 
 export default function StudentDashboard() {
   const [user, setUser] = useState<any>(null);
   const [enrollments, setEnrollments] = useState<PaidCourse[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   // Modal states
   const [selectedReceipt, setSelectedReceipt] = useState<PaidCourse | null>(null);
   const [showContactModal, setShowContactModal] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
   const supabase = createClient();
 
@@ -47,11 +49,12 @@ export default function StudentDashboard() {
         setUser(currentUser);
 
         if (currentUser) {
-          // Fetch paid registrations/transactions from Supabase
+          // Fetch ONLY successful/paid registrations from Supabase
           const { data, error } = await supabase
             .from('registrations')
             .select('*')
             .eq('user_id', currentUser.id)
+            .in('payment_status', ['success', 'paid', 'successful']) // Filter out failed/abandoned payments
             .order('created_at', { ascending: false });
 
           if (!error && data) {
@@ -73,9 +76,36 @@ export default function StudentDashboard() {
     window.print();
   };
 
+  // Trigger Email Client with Pre-filled Confirmation Request/Notification
+  const handleSendEmailConfirmation = (item: PaidCourse) => {
+    const parentEmail = user?.email || 'parent@example.com';
+    const parentName = user?.user_metadata?.full_name || 'Parent/Guardian';
+    const student = item.student_name || parentName;
+    const amountFormatted = (item.amount_paid || 0).toLocaleString();
+
+    const subject = encodeURIComponent(`Payment Confirmation - ${item.course_name} (Ref: ${item.reference})`);
+    const body = encodeURIComponent(
+      `Hello Grove Connect Team,\n\n` +
+      `I have completed the payment for the following enrollment:\n\n` +
+      `• Course: ${item.course_name}\n` +
+      `• Student Name: ${student}\n` +
+      `• Payer Name: ${parentName}\n` +
+      `• Amount Paid: ₦${amountFormatted}\n` +
+      `• Payment Channel: ${item.payment_channel || 'Paystack Online'}\n` +
+      `• Transaction Reference: ${item.reference}\n` +
+      `• Date: ${new Date(item.created_at).toLocaleString()}\n\n` +
+      `Please confirm receipt and send further onboarding details.\n\n` +
+      `Thank you,\n${parentName} (${parentEmail})`
+    );
+
+    window.open(`mailto:hello@groveconnect.org?subject=${subject}&body=${body}`, '_blank');
+    setEmailSent(true);
+    setTimeout(() => setEmailSent(false), 5000);
+  };
+
   return (
     <div className="min-h-screen bg-[#09090b] text-zinc-100 selection:bg-emerald-500 selection:text-zinc-950">
-      {/* Background Decorative Glow */}
+      {/* Background Glow */}
       <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[350px] bg-emerald-500/10 blur-[140px] rounded-full pointer-events-none -z-0" />
 
       {/* Main Container */}
@@ -85,13 +115,13 @@ export default function StudentDashboard() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-8 border-b border-zinc-800/80">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold mb-3">
-              <Sparkles className="w-3.5 h-3.5" /> Parent & Student Dashboard
+              <Sparkles className="w-3.5 h-3.5" /> Parent & Student Portal
             </div>
             <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
-              Welcome back, <span className="text-emerald-400">{user?.user_metadata?.full_name || 'Innovator'}</span> 👋
+              Welcome back, <span className="text-emerald-400">{user?.user_metadata?.full_name || 'Parent'}</span> 👋
             </h1>
             <p className="text-xs sm:text-sm text-zinc-400 mt-1">
-              Track active course enrollments, view payment receipts, and manage your bootcamp access.
+              View verified course enrollments, access digital receipts, and confirm payment details.
             </p>
           </div>
 
@@ -100,14 +130,14 @@ export default function StudentDashboard() {
               onClick={() => setShowContactModal(true)}
               className="px-4 py-2.5 rounded-xl border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 font-bold text-xs flex items-center gap-2 transition-all shadow-md"
             >
-              <MessageSquare className="w-4 h-4 text-emerald-400" /> Confirm Enrollment / Support
+              <MessageSquare className="w-4 h-4 text-emerald-400" /> Confirm Enrollment
             </button>
             
             <Link
               href="/dashboard/course-selection"
               className="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs flex items-center gap-2 transition-all shadow-lg shadow-emerald-500/20"
             >
-              <BookOpen className="w-4 h-4" /> Enroll New Course
+              <BookOpen className="w-4 h-4" /> Enroll New Track
             </Link>
           </div>
         </div>
@@ -115,13 +145,13 @@ export default function StudentDashboard() {
         {/* Content Area */}
         <div className="mt-10">
           <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-emerald-400" /> Your Enrolled Courses & Payments
+            <ShieldCheck className="w-5 h-5 text-emerald-400" /> Confirmed Paid Enrollments
           </h2>
 
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {[1, 2].map((i) => (
-                <div key={i} className="h-48 bg-zinc-900/60 rounded-3xl border border-zinc-800 animate-pulse" />
+                <div key={i} className="h-52 bg-zinc-900/60 rounded-3xl border border-zinc-800 animate-pulse" />
               ))}
             </div>
           ) : enrollments.length === 0 ? (
@@ -130,55 +160,60 @@ export default function StudentDashboard() {
               <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mx-auto mb-4">
                 <BookOpen className="w-6 h-6" />
               </div>
-              <h3 className="text-lg font-bold text-white">No Paid Courses Found</h3>
+              <h3 className="text-lg font-bold text-white">No Confirmed Courses Found</h3>
               <p className="text-xs text-zinc-400 mt-2 leading-relaxed">
-                You haven't enrolled in any bootcamp tracks yet. Pick a track today to kickstart your child's technical journey!
+                You haven't completed payment for any bootcamp tracks yet. Choose a track today to give your child an edge in tech!
               </p>
               <Link
                 href="/dashboard/course-selection"
                 className="inline-flex items-center gap-2 mt-6 px-6 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs shadow-lg shadow-emerald-500/20 transition-all"
               >
-                Browse Available Tracks
+                Browse Available Courses
               </Link>
             </div>
           ) : (
             /* Paid Course Cards Grid */
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {enrollments.map((item) => {
-                const isPaid = item.payment_status?.toLowerCase() === 'success' || item.payment_status?.toLowerCase() === 'paid';
+              {enrollments.map((item) => (
+                <div
+                  key={item.id}
+                  className="bg-[#121215] border border-zinc-800/80 rounded-3xl p-6 flex flex-col justify-between hover:border-emerald-500/40 transition-all shadow-xl"
+                >
+                  <div>
+                    {/* Top Status and Ref */}
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider px-3 py-1 rounded-full border bg-emerald-500/10 text-emerald-400 border-emerald-500/30">
+                        ✓ Payment Confirmed
+                      </span>
 
-                return (
-                  <div
-                    key={item.id}
-                    className="bg-[#121215] border border-zinc-800/80 rounded-3xl p-6 flex flex-col justify-between hover:border-emerald-500/40 transition-all"
-                  >
-                    <div>
-                      {/* Top Badges */}
-                      <div className="flex items-center justify-between mb-4">
-                        <span
-                          className={`text-[10px] font-extrabold uppercase tracking-wider px-3 py-1 rounded-full border ${
-                            isPaid
-                              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                              : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                          }`}
-                        >
-                          {isPaid ? '✓ Paid & Confirmed' : '⏳ Pending Verification'}
+                      <span className="text-[11px] text-zinc-500 font-mono">
+                        Ref: {item.reference ? item.reference.substring(0, 14) : 'N/A'}
+                      </span>
+                    </div>
+
+                    {/* Course Title */}
+                    <h3 className="text-xl font-black text-white">{item.course_name || 'Bootcamp Track'}</h3>
+
+                    {/* Student Name */}
+                    <div className="mt-3 flex items-center gap-2 text-xs text-zinc-300 bg-zinc-900/80 p-2.5 rounded-xl border border-zinc-800">
+                      <User className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>Student Name: <strong className="text-white font-bold">{item.student_name || user?.user_metadata?.full_name || 'Registered Student'}</strong></span>
+                    </div>
+
+                    {/* Payment Details */}
+                    <div className="mt-4 space-y-2 text-xs text-zinc-400 pt-3 border-t border-zinc-800/60">
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center gap-1.5">
+                          <CreditCard className="w-3.5 h-3.5 text-zinc-500" /> Payment Method:
                         </span>
-
-                        <span className="text-[11px] text-zinc-500 font-medium">
-                          Ref: {item.reference ? item.reference.substring(0, 12) + '...' : 'N/A'}
+                        <span className="text-zinc-200 font-semibold uppercase text-[11px]">
+                          {item.payment_channel || 'Paystack Online'}
                         </span>
                       </div>
 
-                      {/* Course Title & Details */}
-                      <h3 className="text-xl font-bold text-white">{item.course_name || 'Bootcamp Track'}</h3>
-                      <p className="text-xs text-zinc-400 mt-1">
-                        Student: <strong className="text-zinc-200">{item.student_name || user?.user_metadata?.full_name || 'Enrolled Student'}</strong>
-                      </p>
-
-                      <div className="mt-4 pt-4 border-t border-zinc-800/60 flex items-center justify-between text-xs text-zinc-400">
+                      <div className="flex items-center justify-between">
                         <span>Date Paid:</span>
-                        <span className="text-zinc-200 font-semibold">
+                        <span className="text-zinc-200 font-medium">
                           {new Date(item.created_at).toLocaleDateString('en-US', {
                             month: 'short',
                             day: 'numeric',
@@ -187,34 +222,34 @@ export default function StudentDashboard() {
                         </span>
                       </div>
 
-                      <div className="mt-2 flex items-center justify-between text-xs text-zinc-400">
-                        <span>Amount Paid:</span>
-                        <span className="text-emerald-400 font-black text-sm">
+                      <div className="flex items-center justify-between pt-1">
+                        <span className="font-semibold text-zinc-300">Amount Paid:</span>
+                        <span className="text-emerald-400 font-black text-base">
                           ₦{(item.amount_paid || 0).toLocaleString()}
                         </span>
                       </div>
                     </div>
-
-                    {/* Action Buttons */}
-                    <div className="mt-6 pt-4 border-t border-zinc-800/80 flex items-center gap-3">
-                      <button
-                        onClick={() => setSelectedReceipt(item)}
-                        className="flex-1 py-2.5 px-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-200 font-semibold text-xs flex items-center justify-center gap-2 transition-all"
-                      >
-                        <Receipt className="w-4 h-4 text-emerald-400" /> View Receipt
-                      </button>
-
-                      <button
-                        onClick={() => setShowContactModal(true)}
-                        className="py-2.5 px-3 rounded-xl border border-zinc-800 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-all text-xs"
-                        title="Contact Us"
-                      >
-                        <Mail className="w-4 h-4" />
-                      </button>
-                    </div>
                   </div>
-                );
-              })}
+
+                  {/* Action Buttons */}
+                  <div className="mt-6 pt-4 border-t border-zinc-800/80 flex items-center gap-3">
+                    <button
+                      onClick={() => setSelectedReceipt(item)}
+                      className="flex-1 py-2.5 px-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-200 font-semibold text-xs flex items-center justify-center gap-2 transition-all"
+                    >
+                      <Receipt className="w-4 h-4 text-emerald-400" /> View Receipt
+                    </button>
+
+                    <button
+                      onClick={() => handleSendEmailConfirmation(item)}
+                      className="py-2.5 px-4 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-bold transition-all text-xs flex items-center gap-2"
+                      title="Send Mail Confirmation"
+                    >
+                      <Send className="w-3.5 h-3.5" /> Mail Us
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -248,12 +283,24 @@ export default function StudentDashboard() {
                 <span className="font-mono text-zinc-200 font-bold">{selectedReceipt.reference}</span>
               </div>
               <div className="flex justify-between">
+                <span className="text-zinc-500">Student Name:</span>
+                <span className="text-emerald-400 font-bold">
+                  {selectedReceipt.student_name || user?.user_metadata?.full_name || 'Enrolled Student'}
+                </span>
+              </div>
+              <div className="flex justify-between">
                 <span className="text-zinc-500">Payer Name:</span>
                 <span className="text-zinc-200 font-semibold">{user?.user_metadata?.full_name || 'Parent/Guardian'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-500">Course Track:</span>
                 <span className="text-white font-bold">{selectedReceipt.course_name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-zinc-500">Payment Channel:</span>
+                <span className="text-zinc-200 uppercase font-semibold">
+                  {selectedReceipt.payment_channel || 'Paystack Online'}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-500">Payment Status:</span>
@@ -265,7 +312,7 @@ export default function StudentDashboard() {
               </div>
 
               <div className="pt-4 border-t border-zinc-800/80 flex justify-between items-center text-sm">
-                <span className="font-bold text-white">Total Paid:</span>
+                <span className="font-bold text-white">Total Amount Paid:</span>
                 <span className="font-black text-emerald-400 text-lg">
                   ₦{(selectedReceipt.amount_paid || 0).toLocaleString()}
                 </span>
@@ -275,15 +322,28 @@ export default function StudentDashboard() {
             {/* Receipt Footer */}
             <div className="pt-4 border-t border-zinc-800 text-center">
               <p className="text-[10px] text-zinc-500">
-                Thank you for investing in the future of technology talent with Grove Connect!
+                Thank you for investing in future tech talent with Grove Connect!
               </p>
 
-              <div className="mt-6 flex items-center gap-3 print:hidden">
+              {emailSent && (
+                <div className="mt-3 p-2 bg-emerald-500/10 text-emerald-400 rounded-xl text-[11px] font-semibold">
+                  ✓ Email client opened! Send email to notify our desk.
+                </div>
+              )}
+
+              <div className="mt-6 flex flex-col sm:flex-row items-center gap-3 print:hidden">
+                <button
+                  onClick={() => handleSendEmailConfirmation(selectedReceipt)}
+                  className="w-full py-2.5 rounded-xl border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 font-bold text-xs flex items-center justify-center gap-2 transition-all"
+                >
+                  <Mail className="w-4 h-4 text-emerald-400" /> Email Confirmation
+                </button>
+
                 <button
                   onClick={handlePrintReceipt}
                   className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition-all"
                 >
-                  <Download className="w-4 h-4" /> Print / Save Receipt
+                  <Download className="w-4 h-4" /> Save Receipt
                 </button>
               </div>
             </div>
@@ -305,12 +365,12 @@ export default function StudentDashboard() {
             <div className="mb-6">
               <h3 className="text-xl font-bold text-white">Confirm Enrollment & Support</h3>
               <p className="text-xs text-zinc-400 mt-1">
-                Have questions or need to confirm your child's course setup? Get in touch directly with our support desk.
+                Need help or want to confirm your child's schedule? Contact our team directly.
               </p>
             </div>
 
             <div className="space-y-4 text-xs">
-              {/* Direct WhatsApp Channel */}
+              {/* WhatsApp Support */}
               <a
                 href="https://wa.me/2348000000000?text=Hello%20Grove%20Connect,%20I%20want%20to%20confirm%20my%20child's%20enrollment."
                 target="_blank"
@@ -323,7 +383,7 @@ export default function StudentDashboard() {
                   </div>
                   <div>
                     <h4 className="font-bold text-white group-hover:text-emerald-400 transition-colors">
-                      WhatsApp Instant Support
+                      WhatsApp Desk
                     </h4>
                     <p className="text-zinc-500 text-[11px]">Chat directly with an enrollment manager</p>
                   </div>
@@ -331,9 +391,9 @@ export default function StudentDashboard() {
                 <ExternalLink className="w-4 h-4 text-zinc-500 group-hover:text-white transition-colors" />
               </a>
 
-              {/* Email Desk */}
+              {/* Direct Mail */}
               <a
-                href="mailto:support@groveconnect.org?subject=Enrollment%20Confirmation"
+                href="mailto:hello@groveconnect.org?subject=Enrollment%20Confirmation"
                 className="p-4 rounded-2xl bg-zinc-900/90 border border-zinc-800 hover:border-emerald-500/50 flex items-center justify-between transition-all group"
               >
                 <div className="flex items-center gap-3">
@@ -342,7 +402,7 @@ export default function StudentDashboard() {
                   </div>
                   <div>
                     <h4 className="font-bold text-white group-hover:text-teal-400 transition-colors">
-                      Email Helpdesk
+                      Direct Email Support
                     </h4>
                     <p className="text-zinc-500 text-[11px]">hello@groveconnect.org</p>
                   </div>
