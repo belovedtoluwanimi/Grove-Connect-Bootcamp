@@ -56,9 +56,9 @@ export function HomeFooter() {
           </h4>
           <ul className="space-y-2.5 text-xs font-medium">
             <li className="hover:text-emerald-400 cursor-pointer transition-colors">Full-Stack Development</li>
-            <li className="hover:text-emerald-400 cursor-pointer transition-colors">UI/UX Product Design</li>
+            <li className="hover:text-emerald-400 cursor-pointer transition-colors">Graphic & Product Design</li>
             <li className="hover:text-emerald-400 cursor-pointer transition-colors">Python & Data Science</li>
-            <li className="hover:text-emerald-400 cursor-pointer transition-colors">Cloud & Cyber Security</li>
+            <li className="hover:text-emerald-400 cursor-pointer transition-colors">Video Editing</li>
           </ul>
         </div>
 
@@ -70,11 +70,11 @@ export function HomeFooter() {
           <ul className="space-y-3 text-xs font-medium">
             <li className="flex items-center gap-2.5">
               <Mail className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>hello@groveconnect.org</span>
+              <span>groveconn3ct22@gmail.com</span>
             </li>
             <li className="flex items-center gap-2.5">
               <Phone className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>+234 800 GROVE CONNECT</span>
+              <span>+234 9134709682</span>
             </li>
             <li className="flex items-center gap-2.5">
               <MapPin className="w-4 h-4 text-emerald-400 shrink-0" />
