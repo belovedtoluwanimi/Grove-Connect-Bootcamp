@@ -51,7 +51,7 @@ export function Header() {
         </Link>
 
         <nav className="hidden md:flex items-center gap-8 text-xs font-semibold text-zinc-400">
-          <Link href="#courses" className="hover:text-emerald-400 transition-colors">
+          <Link href="/courses" className="hover:text-emerald-400 transition-colors">
             Courses
           </Link>
           <Link href="/about" className="hover:text-emerald-400 transition-colors">
