@@ -15,6 +15,7 @@ import {
   Loader2,
   HelpCircle,
 } from 'lucide-react';
+import { Header } from '@/components/home/Header';
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -51,42 +52,7 @@ export default function ContactPage() {
 
       {/* Navigation Header */}
       <header className="sticky top-0 z-50 bg-[#09090b]/80 backdrop-blur-md border-b border-zinc-800/80">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 text-lg font-bold tracking-tight">
-            <span className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center text-zinc-950 font-black text-base shadow-[0_0_15px_rgba(16,185,129,0.3)]">
-              G
-            </span>
-            <span className="text-white">Grove</span>
-            <span className="text-emerald-400">Connect</span>
-          </Link>
-
-          <nav className="hidden md:flex items-center gap-8 text-xs font-medium text-zinc-400">
-            <Link href="/about" className="hover:text-emerald-400 transition-colors">
-              About Us
-            </Link>
-            <Link href="/instructors" className="hover:text-emerald-400 transition-colors">
-              Instructors
-            </Link>
-            <Link href="/contact" className="text-emerald-400 font-semibold">
-              Contact
-            </Link>
-          </nav>
-
-          <div className="flex items-center gap-3 text-xs font-semibold">
-            <Link
-              href="/login"
-              className="px-4 py-2 rounded-xl text-zinc-300 hover:text-white transition-colors"
-            >
-              Sign In
-            </Link>
-            <Link
-              href="/login"
-              className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 shadow-md shadow-emerald-500/20 transition-all"
-            >
-              Enroll Kid
-            </Link>
-          </div>
-        </div>
+        <Header />
       </header>
 
       {/* Hero Header Section */}
@@ -125,8 +91,8 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <span className="text-zinc-500 block text-[11px] font-semibold uppercase">Email Us</span>
-                    <a href="mailto:support@groveconnect.org" className="text-zinc-200 font-medium hover:text-emerald-400 transition-colors">
-                      support@groveconnect.org
+                    <a href="mailto:groveconn3ct22@gmail.com" className="text-zinc-200 font-medium hover:text-emerald-400 transition-colors">
+                      groveconn3ct22@gmail.com
                     </a>
                   </div>
                 </div>
@@ -137,8 +103,8 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <span className="text-zinc-500 block text-[11px] font-semibold uppercase">Call / WhatsApp</span>
-                    <a href="tel:+2348000000000" className="text-zinc-200 font-medium hover:text-emerald-400 transition-colors">
-                      +234 (0) 800 GROVE CONNECT
+                    <a href="tel:+2349134709682" className="text-zinc-200 font-medium hover:text-emerald-400 transition-colors">
+                      +234 9134709682
                     </a>
                   </div>
                 </div>
@@ -150,7 +116,7 @@ export default function ContactPage() {
                   <div>
                     <span className="text-zinc-500 block text-[11px] font-semibold uppercase">Headquarters</span>
                     <p className="text-zinc-200 font-medium leading-relaxed">
-                      Grove Tech Hub, Victoria Island, Lagos, Nigeria
+                      Grove Connect
                     </p>
                   </div>
                 </div>
