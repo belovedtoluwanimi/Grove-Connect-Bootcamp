@@ -18,10 +18,10 @@ function getSupabaseAdmin() {
 
 // Course Pricing Single Source of Truth
 const COURSE_PRICES: Record<string, number> = {
-  'fullstack-kids': 150000,
-  'uiux-kids': 120000,
-  'python-ai': 160000,
-  'cloud-cyber': 180000,
+  'fullstack-kids': 20000,
+  'uiux-kids': 15000,
+  'python-ai': 20000,
+  'video-editing': 20000,
 };
 
 // Zod Schema Validation
