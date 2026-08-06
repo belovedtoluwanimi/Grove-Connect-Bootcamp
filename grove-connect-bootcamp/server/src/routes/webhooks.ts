@@ -3,6 +3,8 @@ import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 
 const router = Router();
+
+// Initialize Supabase client using Service Role key for elevated backend updates
 const supabase = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -14,45 +16,83 @@ const supabase = createClient(
  */
 router.post('/paystack', async (req: Request, res: Response) => {
   try {
-    const paystackSecretKey = process.env.PAYSTACK_SECRET_KEY!;
+    const paystackSecretKey = process.env.PAYSTACK_SECRET_KEY;
+    if (!paystackSecretKey) {
+      console.error('PAYSTACK_SECRET_KEY is missing in environment variables');
+      return res.status(500).send('Secret key missing');
+    }
 
-    // 1. Verify HMAC SHA512 Webhook Signature
+    // 1. Grab raw body buffer (saved from express.json verify hook) or fallback to stringified body
+    const rawBody = (req as any).rawBody || JSON.stringify(req.body);
+
+    // 2. Verify HMAC SHA512 Webhook Signature
     const hash = crypto
       .createHmac('sha512', paystackSecretKey)
-      .update(JSON.stringify(req.body))
+      .update(rawBody)
       .digest('hex');
 
-    if (hash !== req.headers['x-paystack-signature']) {
+    const signature = req.headers['x-paystack-signature'];
+
+    if (hash !== signature) {
+      console.warn('⚠️ Unauthorized Paystack Webhook signature mismatch!');
       return res.status(401).send('Invalid signature');
     }
 
     const event = req.body;
 
-    // 2. Listen for Successful Charge Event
+    // 3. Process Successful Charge Event
     if (event.event === 'charge.success') {
-      const { reference, metadata } = event.data;
-      const userId = metadata.user_id;
+      const { reference, metadata, channel, amount } = event.data;
+      const userId = metadata?.user_id;
+      const amountInNaira = amount ? amount / 100 : 0;
 
-      // Update Payments Table Status
-      await supabase
+      console.log(`✓ Webhook verified for reference: ${reference} (Amount: ₦${amountInNaira})`);
+
+      // Update Payments Table
+      const { error: paymentError } = await supabase
         .from('payments')
-        .update({ status: 'success', raw_payload: event.data })
+        .update({
+          status: 'success',
+          payment_channel: channel || 'paystack',
+          raw_payload: event.data,
+        })
         .eq('reference', reference);
 
-      // Update Student Registrations Payment Status to Paid
-      await supabase
-        .from('registrations')
-        .update({ payment_status: 'paid', status: 'approved' })
-        .eq('user_id', userId)
-        .eq('payment_status', 'unpaid');
+      if (paymentError) {
+        console.error('Error updating payments table:', paymentError);
+      }
 
-      console.log(`Payment successful for reference: ${reference}`);
+      // Update Student Registrations Table if user_id exists
+      if (userId) {
+        const { error: regError } = await supabase
+          .from('registrations')
+          .update({
+            payment_status: 'paid',
+            status: 'approved',
+            payment_channel: channel || 'card',
+          })
+          .eq('user_id', userId)
+          .eq('reference', reference);
+
+        if (regError) {
+          // Fallback to updating unpaid records for the user if reference isn't matched
+          await supabase
+            .from('registrations')
+            .update({
+              payment_status: 'paid',
+              status: 'approved',
+              payment_channel: channel || 'card',
+            })
+            .eq('user_id', userId)
+            .eq('payment_status', 'unpaid');
+        }
+      }
     }
 
-    // Acknowledge receipt to Paystack
+    // Acknowledge receipt with 200 HTTP status to Paystack
     return res.status(200).send('Webhook Processed');
-  } catch (error) {
-    console.error('Webhook Error:', error);
+  } catch (error: any) {
+    console.error('Webhook Internal Error:', error.message || error);
     return res.status(500).send('Webhook Internal Error');
   }
 });

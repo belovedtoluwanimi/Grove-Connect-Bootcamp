@@ -46,8 +46,12 @@ export async function middleware(request: NextRequest) {
 
   // Redirect authenticated users away from /login to /dashboard
   if (user && request.nextUrl.pathname === '/login') {
-    const redirectUrl = new URL('/dashboard/course-selection', request.url)
+    const redirectUrl = new URL('/dashboard', request.url)
     return NextResponse.redirect(redirectUrl)
+  }
+
+  if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
+    return NextResponse.redirect(new URL('/login?reason=timeout', request.url));
   }
 
   return supabaseResponse

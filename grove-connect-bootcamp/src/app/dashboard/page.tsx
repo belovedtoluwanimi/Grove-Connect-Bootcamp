@@ -17,6 +17,7 @@ import {
   User,
   Send,
 } from 'lucide-react';
+import { useInactivityTimeout } from '@/hooks/useInactivityTimeout';
 import { createClient } from '@/utils/supabase/clients';
 
 interface PaidCourse {
@@ -76,6 +77,8 @@ export default function StudentDashboard() {
     window.print();
   };
 
+
+  
   // Trigger Email Client with Pre-filled Confirmation Request/Notification
   const handleSendEmailConfirmation = (item: PaidCourse) => {
     const parentEmail = user?.email || 'parent@example.com';

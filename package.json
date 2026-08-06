@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "express-rate-limit": "^8.6.1",
+    "helmet": "^8.3.0"
+  },
+  "devDependencies": {
+    "@types/helmet": "^0.0.48",
+    "eslint-plugin-security": "^4.0.1"
+  }
+}
