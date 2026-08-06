@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   BookOpen,
   Download,
@@ -16,9 +17,10 @@ import {
   CreditCard,
   User,
   Send,
+  LogOut,
 } from 'lucide-react';
 import { useInactivityTimeout } from '@/hooks/useInactivityTimeout';
-import { createClient } from '@/utils/supabase/clients';
+import { createClient } from '@/utils/supabase/clients'; // Note: Ensure this matches your file name (client vs clients)
 
 interface PaidCourse {
   id: string;
@@ -33,6 +35,7 @@ interface PaidCourse {
 
 export default function StudentDashboard() {
   const [user, setUser] = useState<any>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [enrollments, setEnrollments] = useState<PaidCourse[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -42,12 +45,17 @@ export default function StudentDashboard() {
   const [emailSent, setEmailSent] = useState(false);
 
   const supabase = createClient();
+  const router = useRouter();
+
+  // Active 10-minute automatic logout hook
+  useInactivityTimeout(isAuthenticated);
 
   useEffect(() => {
     async function fetchUserDataAndCourses() {
       try {
         const { data: { user: currentUser } } = await supabase.auth.getUser();
         setUser(currentUser);
+        setIsAuthenticated(!!currentUser);
 
         if (currentUser) {
           // Fetch ONLY successful/paid registrations from Supabase
@@ -77,8 +85,15 @@ export default function StudentDashboard() {
     window.print();
   };
 
+  // --- Manual Logout Handler ---
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    localStorage.clear();
+    sessionStorage.clear();
+    router.push('/login');
+    router.refresh(); // Force a hard reload of the auth state
+  };
 
-  
   // Trigger Email Client with Pre-filled Confirmation Request/Notification
   const handleSendEmailConfirmation = (item: PaidCourse) => {
     const parentEmail = user?.email || 'parent@example.com';
@@ -128,7 +143,7 @@ export default function StudentDashboard() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={() => setShowContactModal(true)}
               className="px-4 py-2.5 rounded-xl border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 font-bold text-xs flex items-center gap-2 transition-all shadow-md"
@@ -142,6 +157,14 @@ export default function StudentDashboard() {
             >
               <BookOpen className="w-4 h-4" /> Enroll New Track
             </Link>
+
+            {/* --- Sign Out Button --- */}
+            <button
+              onClick={handleSignOut}
+              className="px-4 py-2.5 rounded-xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400 font-bold text-xs flex items-center gap-2 transition-all"
+            >
+              <LogOut className="w-4 h-4" /> Sign Out
+            </button>
           </div>
         </div>
 
