@@ -50,9 +50,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl)
   }
 
-  if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
-    return NextResponse.redirect(new URL('/login?reason=timeout', request.url));
-  }
+  // if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
+  //   return NextResponse.redirect(new URL('/login?reason=timeout', request.url));
+  // }
 
   return supabaseResponse
 }
