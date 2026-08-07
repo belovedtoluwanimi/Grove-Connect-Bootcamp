@@ -219,13 +219,13 @@ export default function CourseSelectionDashboard() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <div className="mb-8">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-semibold uppercase tracking-wider mb-2">
-            <Sparkles className="w-3 h-3" /> Step 1 of 2: Child & Course Selection
+            <Sparkles className="w-3 h-3" /> Step 1 of 2: Course Selection
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
-            Register Student & Select Bootcamp Tracks
+            Register & Select Bootcamp Tracks
           </h1>
           <p className="text-xs sm:text-sm text-zinc-400 mt-1">
-            Fill in your details, pick their preferred bootcamp course, and add to cart.
+            Fill in your details, pick your preferred bootcamp course, and add to cart.
           </p>
         </div>
 
@@ -249,7 +249,7 @@ export default function CourseSelectionDashboard() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[11px] font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">
-                    Child&apos;s Full Name
+                    Full Name
                   </label>
                   <input
                     type="text"
