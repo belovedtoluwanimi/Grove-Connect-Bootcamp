@@ -203,7 +203,7 @@ export default function CourseSelectionDashboard() {
           <div className="flex items-center gap-4">
             <div className="hidden sm:flex items-center gap-2 text-xs text-zinc-400">
               <User className="w-4 h-4 text-emerald-400" />
-              <span>Parent Portal</span>
+              <span>Student Portal</span>
             </div>
             <button
               onClick={handleSignOut}
@@ -225,7 +225,7 @@ export default function CourseSelectionDashboard() {
             Register Student & Select Bootcamp Tracks
           </h1>
           <p className="text-xs sm:text-sm text-zinc-400 mt-1">
-            Fill in your child&apos;s details, pick their preferred bootcamp course, and add to cart.
+            Fill in your details, pick their preferred bootcamp course, and add to cart.
           </p>
         </div>
 
@@ -243,7 +243,7 @@ export default function CourseSelectionDashboard() {
             <div className="bg-[#121215] border border-zinc-800/80 rounded-2xl p-6 sm:p-8">
               <h2 className="text-base font-bold text-white mb-4 flex items-center gap-2">
                 <User className="w-5 h-5 text-emerald-400" />
-                Child Information
+                Personal Information
               </h2>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -272,7 +272,7 @@ export default function CourseSelectionDashboard() {
                   >
                     <option value="8-11">Ages 8 – 11 (Junior Tech)</option>
                     <option value="12-15">Ages 12 – 15 (Intermediate)</option>
-                    <option value="16-18">Ages 16 – 18 (Senior Academy)</option>
+                    <option value="16-30">Ages 16 – 18 (Senior Academy)</option>
                   </select>
                 </div>
               </div>
