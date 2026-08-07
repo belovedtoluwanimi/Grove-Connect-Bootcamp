@@ -1,0 +1,1 @@
+export const logo = "/grove-logo.webp"

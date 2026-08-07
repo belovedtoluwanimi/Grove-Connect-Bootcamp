@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/clients';
 import { useInactivityTimeout } from '@/hooks/useInactivityTimeout';
 import { User, LogOut, LayoutDashboard } from 'lucide-react';
+import Image from 'next/image';
+import { logo } from '@/app';
 
 export function Header() {
   const [user, setUser] = useState<any>(null);
@@ -44,7 +46,7 @@ export function Header() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 text-lg font-black tracking-tight">
           <span className="w-8 h-8 rounded-xl bg-emerald-500 flex items-center justify-center text-zinc-950 font-black text-base shadow-[0_0_15px_rgba(16,185,129,0.4)]">
-            G
+            <Image src={logo} alt=''/>
           </span>
           <span className="text-white">Grove</span>
           <span className="text-emerald-400">Connect</span>
