@@ -41,7 +41,7 @@ const COURSES = [
     title: 'Graphic & Product Design',
     category: 'Design & Creative',
     ageRange: 'Ages 10–30',
-    price: 15000,
+    price: 20000,
     duration: '4 Weeks',
     icon: Palette,
     description: 'Wireframing, color theory, prototyping, and Figma design systems.',
