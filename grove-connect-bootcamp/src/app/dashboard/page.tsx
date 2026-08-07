@@ -54,22 +54,29 @@ export default function StudentDashboard() {
     async function fetchUserDataAndCourses() {
       try {
         const { data: { user: currentUser } } = await supabase.auth.getUser();
-        setUser(currentUser);
-        setIsAuthenticated(!!currentUser);
-
-        if (currentUser) {
-          // Fetch ONLY successful/paid registrations from Supabase
-          const { data, error } = await supabase
-            .from('registrations')
-            .select('*')
-            .eq('user_id', currentUser.id)
-            .in('payment_status', ['success', 'paid', 'successful']) // Filter out failed/abandoned payments
-            .order('created_at', { ascending: false });
-
-          if (!error && data) {
-            setEnrollments(data);
-          }
+        
+        // 🚨 STRICT AUTH CHECK: If no valid user is found, kick them to login
+        if (!currentUser) {
+          router.replace('/login');
+          return; // Stop running the rest of the code
         }
+
+        // If user exists, set their data
+        setUser(currentUser);
+        setIsAuthenticated(true);
+
+        // Fetch ONLY successful/paid registrations from Supabase
+        const { data, error } = await supabase
+          .from('registrations')
+          .select('*')
+          .eq('user_id', currentUser.id)
+          .in('payment_status', ['success', 'paid', 'successful']) // Filter out failed/abandoned payments
+          .order('created_at', { ascending: false });
+
+        if (!error && data) {
+          setEnrollments(data);
+        }
+        
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
       } finally {
@@ -78,7 +85,7 @@ export default function StudentDashboard() {
     }
 
     fetchUserDataAndCourses();
-  }, [supabase]);
+  }, [supabase, router]);
 
   // Handle printing/downloading receipt
   const handlePrintReceipt = () => {
