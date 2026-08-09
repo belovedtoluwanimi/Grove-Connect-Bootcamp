@@ -44,14 +44,14 @@ const COURSES = [
     price: 20000,
     duration: '4 Weeks',
     icon: Palette,
-    description: 'Wireframing, color theory, prototyping, and Figma design systems.',
+    description: 'Wireframing, color theory',
   },
   {
     id: 'python-ai',
     title: 'Python, Data Science & AI',
     category: 'Data & AI',
     ageRange: 'Ages 12–30',
-    price: 20000,
+    price: 1500,
     duration: '4 Weeks',
     icon: Database,
     description: 'Data analytics with Python, algorithms, and intro to machine learning.',
@@ -61,7 +61,7 @@ const COURSES = [
       title: 'Video Editing',
       category: 'Infrastructure',
       ageRange: 'Ages 12–30',
-      price: 20000,
+      price: 1500,
       duration: '4 Weeks',
       icon: Play,
       description: 'Video editing, Social media video making, long form video',
@@ -71,7 +71,7 @@ const COURSES = [
     title: 'Music Training',
     category: 'Creative Arts',
     ageRange: 'Ages 10–18',
-    price: 20000,
+    price: 1500,
     duration: '4 Weeks',
     icon: Music,
     description: 'Bass guitar essentials, vocal training, rhythm, and live performance fundamentals',
@@ -307,9 +307,6 @@ export default function CourseSelectionDashboard() {
                           >
                             <Icon className="w-5 h-5" />
                           </div>
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
-                            {course.ageRange}
-                          </span>
                         </div>
 
                         <h3 className="font-bold text-sm text-zinc-100">{course.title}</h3>

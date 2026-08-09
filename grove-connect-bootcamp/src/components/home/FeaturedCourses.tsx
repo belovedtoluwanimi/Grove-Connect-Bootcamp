@@ -11,7 +11,7 @@ const COURSES = [
     borderColor: 'hover:border-emerald-500/60',
     iconBg: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
     desc: 'Build real websites and web apps using HTML, CSS, JavaScript & React.',
-    age: 'Ages 10–18',
+   
     price: '₦20,000',
   },
   {
@@ -23,7 +23,7 @@ const COURSES = [
     borderColor: 'hover:border-purple-500/60',
     iconBg: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
     desc: 'Design mobile apps and prototypes using Figma and modern design principles.',
-    age: 'Ages 10–18',
+   
     price: '₦20,000',
   },
   {
@@ -35,7 +35,7 @@ const COURSES = [
     borderColor: 'hover:border-amber-500/60',
     iconBg: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
     desc: 'Learn Python programming, data analytics, and build machine learning bots.',
-    age: 'Ages 12–18',
+    
     price: '₦20,000',
   },
   {
@@ -47,7 +47,7 @@ const COURSES = [
     borderColor: 'hover:border-cyan-500/60',
     iconBg: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
     desc: 'Master network safety, ethical hacking concepts, and cloud tools.',
-    age: 'Ages 12–18',
+   
     price: '₦20,000',
   },
 ];
@@ -80,9 +80,6 @@ export function FeaturedCourses() {
                   <div className={`w-14 h-14 rounded-2xl border flex items-center justify-center ${course.iconBg}`}>
                     <Icon className="w-7 h-7" />
                   </div>
-                  <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-300 bg-zinc-900/90 px-3 py-1 rounded-full border border-zinc-700">
-                    {course.age}
-                  </span>
                 </div>
 
                 <h3 className="text-2xl font-black text-white">{course.title}</h3>
