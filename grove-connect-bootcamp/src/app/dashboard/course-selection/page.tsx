@@ -272,7 +272,7 @@ export default function CourseSelectionDashboard() {
                   >
                     <option value="8-11">Ages 8 – 11 (Junior Tech)</option>
                     <option value="12-15">Ages 12 – 15 (Intermediate)</option>
-                    <option value="16-30">Ages 16 – 18 (Senior Academy)</option>
+                    <option value="16-30">Ages 16 – 60 (Senior Academy)</option>
                   </select>
                 </div>
               </div>
