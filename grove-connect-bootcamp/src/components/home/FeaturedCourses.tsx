@@ -57,7 +57,7 @@ export function FeaturedCourses() {
     <section id="courses" className="py-20 px-4 sm:px-6 max-w-6xl mx-auto">
       <div className="text-center max-w-2xl mx-auto mb-14">
         <span className="text-xs font-bold uppercase tracking-widest text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
-          Curriculum Built for Kids
+          Curriculum Built for everyone inclusive
         </span>
         <h2 className="text-3xl sm:text-5xl font-black text-white mt-4 tracking-tight">
           Pick Your Tech Pathway

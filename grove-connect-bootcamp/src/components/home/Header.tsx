@@ -95,7 +95,7 @@ export function Header() {
                 href="/login"
                 className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 shadow-lg shadow-emerald-500/20 transition-all"
               >
-                Enroll Kid
+                Enroll Now
               </Link>
             </>
           )}

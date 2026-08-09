@@ -23,14 +23,14 @@ export function HeroSection() {
       </div>
 
       <h1 className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight text-white leading-[1.1]">
-        Where Young Minds Build <br className="hidden sm:block" />
+        Where Young & Adult Minds Build <br className="hidden sm:block" />
         <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-amber-300">
           The Next Big Thing
         </span> 🚀
       </h1>
 
       <p className="mt-6 text-zinc-300 text-base sm:text-xl max-w-2xl mx-auto font-normal leading-relaxed">
-        Fun, hands-on coding, product design, and AI bootcamps designed for kids & teens. 
+        Fun, hands-on coding, product design, and AI bootcamps designed for kids, teens and adults. 
         Turn screen time into valuable creator skills!
       </p>
 
@@ -53,7 +53,7 @@ export function HeroSection() {
       <div className="mt-14 flex flex-wrap items-center justify-center gap-6 text-xs text-zinc-400 font-medium">
         <div className="flex items-center gap-2 bg-zinc-900/60 px-4 py-2 rounded-xl border border-zinc-800">
           <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-          <span><strong className="text-white">4.9/5 Rating</strong> from 500+ Parents</span>
+          <span><strong className="text-white">4.9/5 Rating</strong> from Parents</span>
         </div>
 
         <div className="flex items-center gap-2 bg-zinc-900/60 px-4 py-2 rounded-xl border border-zinc-800">
