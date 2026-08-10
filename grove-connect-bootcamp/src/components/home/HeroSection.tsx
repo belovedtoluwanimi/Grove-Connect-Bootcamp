@@ -13,7 +13,7 @@ export function HeroSection() {
     supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
   }, [supabase]);
 
-  const primaryActionUrl = user ? '/dashboard/course-selection' : '/login';
+  const primaryActionUrl = user ? '/dashboard' : '/login';
 
   return (
     <section className="relative z-10 pt-16 pb-20 px-4 sm:px-6 max-w-6xl mx-auto text-center">
