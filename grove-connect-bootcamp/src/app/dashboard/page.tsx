@@ -136,9 +136,9 @@ export default function StudentDashboard() {
     } else {
       alert('Payment initialization failed. Please try again.');
     }
-  } catch (err) {
-    console.error('Registration Payment Error:', err);
-    alert('Error connecting to payment gateway.');
+  } catch (err: any) {
+  console.error('Registration Payment Error Detail:', err);
+  alert(`Error connecting to payment gateway: ${err.message || 'Network error'}`);
   } finally {
     setIsPayLoading(false);
   }
