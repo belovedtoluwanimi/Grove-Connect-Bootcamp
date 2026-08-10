@@ -103,31 +103,46 @@ export default function StudentDashboard() {
 
   // Handle Paystack ₦1,500 Mandatory Registration
   const handlePayRegistration = async () => {
-    setIsPayLoading(true);
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/payments/bootcamp-registration`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: user.email,
-          userId: user.id,
-          studentName: user.user_metadata?.full_name,
-        }),
-      });
+  setIsPayLoading(true);
+  try {
+    // 1. Fallback safeguard: use window.location or explicit production URL if process.env is undefined
+    const backendUrl =
+      process.env.NEXT_PUBLIC_BACKEND_URL ||
+      'https://grove-connect-bootcamp.onrender.com'; // Replace with your exact Render URL
 
-      const data = await res.json();
-      if (data?.data?.authorization_url) {
-        window.location.href = data.data.authorization_url;
-      } else {
-        alert('Payment initialization failed. Please try again.');
-      }
-    } catch (err) {
-      console.error(err);
-      alert('Error connecting to payment gateway.');
-    } finally {
-      setIsPayLoading(false);
+    console.log('Sending request to:', `${backendUrl}/api/payments/bootcamp-registration`);
+
+    const res = await fetch(`${backendUrl}/api/payments/bootcamp-registration`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: user.email,
+        userId: user.id,
+        studentName: user.user_metadata?.full_name,
+      }),
+    });
+
+    // 2. Guard against non-200 responses (like 404/500 HTML pages)
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error('Server returned non-200 response:', errorText);
+      alert(`Server error (${res.status}). Please try again later.`);
+      return;
     }
-  };
+
+    const data = await res.json();
+    if (data?.data?.authorization_url) {
+      window.location.href = data.data.authorization_url;
+    } else {
+      alert('Payment initialization failed. Please try again.');
+    }
+  } catch (err) {
+    console.error('Registration Payment Error:', err);
+    alert('Error connecting to payment gateway.');
+  } finally {
+    setIsPayLoading(false);
+  }
+};
 
   const handlePrintReceipt = () => {
     window.print();
