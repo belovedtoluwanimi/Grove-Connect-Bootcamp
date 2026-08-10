@@ -22,7 +22,7 @@ const COURSES = [
     color: 'from-purple-500/20 to-pink-500/10',
     borderColor: 'hover:border-purple-500/60',
     iconBg: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
-    desc: 'Design mobile apps and prototypes using Figma and modern design principles.',
+    desc: 'Master color theory, branding, and graphic design fundamentals.',
    
     price: '₦20,000',
   },
