@@ -23,7 +23,7 @@ export function HeroSection() {
       </div>
 
       <h1 className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight text-white leading-[1.1]">
-        Where Young & Adult Minds Build <br className="hidden sm:block" />
+        Where Brilliant Minds Build <br className="hidden sm:block" />
         <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-amber-300">
           The Next Big Thing
         </span> 🚀
