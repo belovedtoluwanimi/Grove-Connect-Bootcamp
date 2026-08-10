@@ -9,30 +9,51 @@ import webhookRoutes from './routes/webhooks';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Security Headers
-app.use(helmet());
+// 1. Security Headers (Allow cross-origin requests)
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
-// Strip trailing slash from CLIENT_URL to prevent CORS mismatches
-const rawClientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
-const clientUrl = rawClientUrl.replace(/\/$/, '');
+// 2. Dynamic CORS Configuration (Handles Vercel Previews & Production)
+const allowedOrigins = [
+  process.env.CLIENT_URL?.replace(/\/$/, ''),
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+].filter(Boolean) as string[];
 
 app.use(
   cors({
-    origin: [clientUrl, 'http://localhost:3000'],
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, cURL, Postman)
+      if (!origin) return callback(null, true);
+
+      const isAllowed =
+        allowedOrigins.includes(origin) ||
+        /\.vercel\.app$/.test(origin); // Allows all Vercel deployment preview URLs
+
+      if (isAllowed) {
+        return callback(null, true);
+      } else {
+        console.warn(`[CORS Blocked]: ${origin}`);
+        return callback(new Error('CORS policy constraint violated'));
+      }
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-paystack-signature'],
   })
 );
 
-// Save raw body buffer for Paystack Webhook HMAC verification
+// 3. Save raw body buffer for Paystack Webhook HMAC verification
 app.use(
   express.json({
     verify: (req: any, _res, buf) => {
-      req.rawBody = buf;
+      if (buf && buf.length) {
+        req.rawBody = buf;
+      }
     },
   })
 );
 
-// Rate Limiting for API routes
+// 4. Rate Limiting for API routes
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // Limit each IP to 100 requests per 15 mins
@@ -41,11 +62,12 @@ const apiLimiter = rateLimit({
 
 app.use('/api/', apiLimiter);
 
-// Routes
+// 5. Routes
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/payments', paymentRoutes);
 
-app.get('/health', (req, res) => {
+// Health Check
+app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'online', service: 'Grove Connect Payment Service' });
 });
 
