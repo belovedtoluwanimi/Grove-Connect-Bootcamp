@@ -44,11 +44,12 @@ router.post('/paystack', async (req: Request, res: Response) => {
     if (event.event === 'charge.success') {
       const { reference, metadata, channel, amount } = event.data;
       const userId = metadata?.user_id;
+      const paymentType = metadata?.type;
       const amountInNaira = amount ? amount / 100 : 0;
 
       console.log(`✓ Webhook verified for reference: ${reference} (Amount: ₦${amountInNaira})`);
 
-      // Update Payments Table
+      // Update General Payments Record
       const { error: paymentError } = await supabase
         .from('payments')
         .update({
@@ -62,8 +63,22 @@ router.post('/paystack', async (req: Request, res: Response) => {
         console.error('Error updating payments table:', paymentError);
       }
 
-      // Update Student Registrations Table if user_id exists
-      if (userId) {
+      // Branch A: Handle ₦1,500 Mandatory Registration Fee
+      if (paymentType === 'bootcamp_registration' && userId) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({ is_bootcamp_registered: true })
+          .eq('id', userId);
+
+        if (profileError) {
+          console.error('Error unlocking student profile registration:', profileError);
+        } else {
+          console.log(`✓ Student profile unlocked for User ID: ${userId}`);
+        }
+      }
+
+      // Branch B: Handle Course Track Purchase
+      if (userId && paymentType !== 'bootcamp_registration') {
         const { error: regError } = await supabase
           .from('registrations')
           .update({
@@ -75,7 +90,7 @@ router.post('/paystack', async (req: Request, res: Response) => {
           .eq('reference', reference);
 
         if (regError) {
-          // Fallback to updating unpaid records for the user if reference isn't matched
+          // Fallback to updating unpaid records for the user if reference isn't matched directly
           await supabase
             .from('registrations')
             .update({

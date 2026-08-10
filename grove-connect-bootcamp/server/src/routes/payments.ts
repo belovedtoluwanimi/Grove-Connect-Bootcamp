@@ -17,12 +17,12 @@ function getSupabaseAdmin() {
 }
 
 // Course Pricing Single Source of Truth
-const COURSE_PRICES: Record<string, number> = {
-  'fullstack-kids': 1500,
-  'uiux-kids': 1500,
-  'python-ai': 1500,
-  'video-editing': 1500,
-  'music-training': 1500,
+const COURSE_PRICES: Record<string, { name: string; price: number }> = {
+  'fullstack-kids': { name: 'Full-Stack Web Engineering', price: 20000 },
+  'uiux-kids': { name: 'Graphic & Product Design', price: 15000 },
+  'python-ai': { name: 'Python AI & Data Science', price: 20000 },
+  'video-editing': { name: 'Video Editing', price: 20000 },
+  'music-training': { name: 'Music Training', price: 20000 },
 };
 
 // Zod Schema Validation
@@ -39,12 +39,76 @@ const initializePaymentSchema = z.object({
 });
 
 /**
+ * POST /api/payments/bootcamp-registration
+ * Handles ₦1,500 mandatory platform activation fee.
+ */
+router.post('/bootcamp-registration', async (req: Request, res: Response) => {
+  try {
+    const supabase = getSupabaseAdmin();
+    const { email, userId, studentName } = req.body;
+
+    if (!email || !userId) {
+      return res.status(400).json({ error: 'Missing email or user ID.' });
+    }
+
+    const paystackSecretKey = process.env.PAYSTACK_SECRET_KEY;
+    if (!paystackSecretKey) {
+      throw new Error('PAYSTACK_SECRET_KEY is missing from environment variables.');
+    }
+
+    const amountInKobo = 1500 * 100; // ₦1,500 in Kobo
+    const paymentReference = `REG-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+
+    const response = await fetch('https://api.paystack.co/transaction/initialize', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${paystackSecretKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email,
+        amount: amountInKobo,
+        reference: paymentReference,
+        metadata: {
+          user_id: userId,
+          student_name: studentName,
+          type: 'bootcamp_registration',
+          course_name: 'Bootcamp Platform Registration',
+        },
+        callback_url: `${process.env.CLIENT_URL || 'http://localhost:3000'}/dashboard`,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.status) {
+      throw new Error(data.message || 'Paystack registration initialization failed.');
+    }
+
+    // Insert payment audit record
+    await supabase.from('payments').insert({
+      user_id: userId,
+      amount: 1500,
+      currency: 'NGN',
+      reference: paymentReference,
+      provider: 'paystack',
+      status: 'pending',
+      raw_payload: { type: 'bootcamp_registration', studentName },
+    });
+
+    return res.status(200).json(data);
+  } catch (error: any) {
+    console.error('Bootcamp Registration Payment Error:', error);
+    return res.status(500).json({ error: error.message || 'Internal server error' });
+  }
+});
+
+/**
  * POST /api/payments/initialize
- * Handles cart verification, record insertion, and Paystack checkout session setup.
+ * Handles course track checkout session setup and database records.
  */
 router.post('/initialize', async (req: Request, res: Response) => {
   try {
-    // 0. Initialize Supabase safely inside the request
     const supabase = getSupabaseAdmin();
 
     // 1. Validate Payload
@@ -55,22 +119,26 @@ router.post('/initialize', async (req: Request, res: Response) => {
     let verifiedTotalAmount = 0;
 
     for (const item of cartItems) {
-      const price = COURSE_PRICES[item.courseId];
-      if (!price) {
+      const course = COURSE_PRICES[item.courseId];
+      if (!course) {
         return res.status(400).json({ message: `Invalid course ID selected: ${item.courseId}` });
       }
-      verifiedTotalAmount += price;
+      verifiedTotalAmount += course.price;
     }
 
-    // Convert NGN amount to Kobo (Paystack requires smallest currency unit)
     const amountInKobo = verifiedTotalAmount * 100;
     const paymentReference = `GROVE-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
 
     // 3. Register Student Registrations in PostgreSQL via Supabase
     for (const item of cartItems) {
+      const course = COURSE_PRICES[item.courseId];
+
       const { error: regError } = await supabase.from('registrations').insert({
         user_id: userId,
-        track: item.courseId,
+        course_name: course.name,
+        amount_paid: course.price,
+        student_name: item.childName,
+        reference: paymentReference,
         status: 'pending',
         payment_status: 'unpaid',
       });
@@ -100,6 +168,7 @@ router.post('/initialize', async (req: Request, res: Response) => {
         callback_url: `${process.env.CLIENT_URL || 'http://localhost:3000'}/dashboard/payment-status`,
         metadata: {
           user_id: userId,
+          type: 'course_enrollment',
           cart_items: cartItems,
           custom_fields: [
             {
@@ -121,7 +190,6 @@ router.post('/initialize', async (req: Request, res: Response) => {
     // 5. Store Payment Audit Trail Record
     const { error: paymentDbError } = await supabase.from('payments').insert({
       user_id: userId,
-      registration_id: null, // Linked via payment reference during webhook
       amount: verifiedTotalAmount,
       currency: 'NGN',
       reference: paymentReference,
