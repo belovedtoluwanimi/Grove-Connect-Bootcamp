@@ -25,14 +25,15 @@ const COURSE_PRICES: Record<string, { name: string; price: number }> = {
   'music-training': { name: 'Music Training', price: 20000 },
 };
 
-// Zod Schema Validation
+// Zod Schema Validation (Flexible payload to accept studentName or childName)
 const initializePaymentSchema = z.object({
   userId: z.string().uuid(),
   email: z.string().email(),
   cartItems: z.array(
     z.object({
-      childName: z.string().min(2),
-      childAge: z.string(),
+      childName: z.string().optional(),
+      studentName: z.string().optional(),
+      childAge: z.string().optional(),
       courseId: z.string(),
     })
   ).min(1, 'Cart must contain at least one item'),
@@ -133,11 +134,14 @@ router.post('/initialize', async (req: Request, res: Response) => {
     for (const item of cartItems) {
       const course = COURSE_PRICES[item.courseId];
 
+      // Resolve student name gracefully from either field
+      const studentNameResolved = item.studentName || item.childName || 'Enrolled Student';
+
       const { error: regError } = await supabase.from('registrations').insert({
         user_id: userId,
         course_name: course.name,
         amount_paid: course.price,
-        student_name: item.childName,
+        student_name: studentNameResolved,
         reference: paymentReference,
         status: 'pending',
         payment_status: 'unpaid',
