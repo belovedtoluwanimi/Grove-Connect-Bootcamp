@@ -92,13 +92,13 @@ function LoginForm() {
 
       <div className="mb-6">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-semibold uppercase tracking-wider mb-2">
-          <Sparkles className="w-3 h-3" /> {isSignUp ? 'Parent Registration' : 'Parent Login'}
+          <Sparkles className="w-3 h-3" /> {isSignUp ? 'Registration' : 'Login'}
         </div>
         <h1 className="text-2xl font-bold text-white tracking-tight">
-          {isSignUp ? 'Create Parent Account' : 'Welcome Back'}
+          {isSignUp ? 'Create Account' : 'Welcome Back'}
         </h1>
         <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-          Sign in to manage your child’s enrollment and course selection.
+          Sign in to manage your enrollment and course selection.
         </p>
       </div>
 

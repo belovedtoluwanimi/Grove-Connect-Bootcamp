@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation'; // Added useSearchParams
 import {
   BookOpen,
   Download,
@@ -50,6 +50,7 @@ export default function StudentDashboard() {
 
   const supabase = createClient();
   const router = useRouter();
+  const searchParams = useSearchParams(); // Read URL params
 
   // Active 10-minute automatic logout hook
   useInactivityTimeout(isAuthenticated);
@@ -68,17 +69,36 @@ export default function StudentDashboard() {
         setUser(currentUser);
         setIsAuthenticated(true);
 
-        // Check if user has completed the mandatory ₦1,500 bootcamp registration
-        const { data: profile } = await supabase
+        const paymentFlag = searchParams.get('payment');
+
+        // Check registration status from Supabase profile
+        let { data: profile } = await supabase
           .from('profiles')
           .select('is_bootcamp_registered')
           .eq('id', currentUser.id)
           .single();
 
-        const registeredStatus = profile?.is_bootcamp_registered || false;
+        let registeredStatus = profile?.is_bootcamp_registered || false;
+
+        // If returned from Paystack registration but webhook is processing, poll Supabase
+        if (!registeredStatus && paymentFlag === 'registered') {
+          let attempts = 0;
+          while (!registeredStatus && attempts < 5) {
+            await new Promise((res) => setTimeout(res, 1500)); // Wait 1.5s per attempt
+            const { data: recheckProfile } = await supabase
+              .from('profiles')
+              .select('is_bootcamp_registered')
+              .eq('id', currentUser.id)
+              .single();
+
+            registeredStatus = recheckProfile?.is_bootcamp_registered || false;
+            attempts++;
+          }
+        }
+
         setIsRegistered(registeredStatus);
 
-        // Fetch ONLY paid/successful course enrollments
+        // Fetch ONLY paid/successful course enrollments if registered
         if (registeredStatus) {
           const { data, error } = await supabase
             .from('registrations')
@@ -99,50 +119,46 @@ export default function StudentDashboard() {
     }
 
     fetchUserDataAndCourses();
-  }, [supabase, router]);
+  }, [supabase, router, searchParams]);
 
   // Handle Paystack ₦1,500 Mandatory Registration
   const handlePayRegistration = async () => {
-  setIsPayLoading(true);
-  try {
-    // 1. Fallback safeguard: use window.location or explicit production URL if process.env is undefined
-    const backendUrl =
-      process.env.NEXT_PUBLIC_BACKEND_URL ||
-      'https://grove-connect-bootcamp.onrender.com'; // Replace with your exact Render URL
+    setIsPayLoading(true);
+    try {
+      const backendUrl =
+        process.env.NEXT_PUBLIC_BACKEND_URL ||
+        'https://grove-connect-bootcamp.onrender.com';
 
-    console.log('Sending request to:', `${backendUrl}/api/payments/bootcamp-registration`);
+      const res = await fetch(`${backendUrl}/api/payments/bootcamp-registration`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: user.email,
+          userId: user.id,
+          studentName: user.user_metadata?.full_name,
+        }),
+      });
 
-    const res = await fetch(`${backendUrl}/api/payments/bootcamp-registration`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: user.email,
-        userId: user.id,
-        studentName: user.user_metadata?.full_name,
-      }),
-    });
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('Server returned non-200 response:', errorText);
+        alert(`Server error (${res.status}). Please try again later.`);
+        return;
+      }
 
-    // 2. Guard against non-200 responses (like 404/500 HTML pages)
-    if (!res.ok) {
-      const errorText = await res.text();
-      console.error('Server returned non-200 response:', errorText);
-      alert(`Server error (${res.status}). Please try again later.`);
-      return;
+      const data = await res.json();
+      if (data?.data?.authorization_url) {
+        window.location.href = data.data.authorization_url;
+      } else {
+        alert('Payment initialization failed. Please try again.');
+      }
+    } catch (err: any) {
+      console.error('Registration Payment Error Detail:', err);
+      alert(`Error connecting to payment gateway: ${err.message || 'Network error'}`);
+    } finally {
+      setIsPayLoading(false);
     }
-
-    const data = await res.json();
-    if (data?.data?.authorization_url) {
-      window.location.href = data.data.authorization_url;
-    } else {
-      alert('Payment initialization failed. Please try again.');
-    }
-  } catch (err: any) {
-  console.error('Registration Payment Error Detail:', err);
-  alert(`Error connecting to payment gateway: ${err.message || 'Network error'}`);
-  } finally {
-    setIsPayLoading(false);
-  }
-};
+  };
 
   const handlePrintReceipt = () => {
     window.print();

@@ -75,7 +75,7 @@ router.post('/bootcamp-registration', async (req: Request, res: Response) => {
           type: 'bootcamp_registration',
           course_name: 'Bootcamp Platform Registration',
         },
-        callback_url: `${process.env.CLIENT_URL || 'http://localhost:3000'}/dashboard`,
+        callback_url: `${process.env.CLIENT_URL || 'http://localhost:3000'}/dashboard?payment=registered`,
       }),
     });
 
