@@ -9,8 +9,12 @@ import webhookRoutes from './routes/webhooks';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// 1. Security Headers (Allow cross-origin requests)
+// Tell Express to trust proxy headers (Required for Render & express-rate-limit)
+app.set('trust proxy', 1);
+
+// Security Headers
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+
 
 // 2. Dynamic CORS Configuration (Handles Vercel Previews & Production)
 const allowedOrigins = [
