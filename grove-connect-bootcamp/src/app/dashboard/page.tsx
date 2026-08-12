@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation'; // Added useSearchParams
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   BookOpen,
   Download,
@@ -35,7 +35,8 @@ interface PaidCourse {
   student_name?: string;
 }
 
-export default function StudentDashboard() {
+// Inner Component: Handles URL query parameters & dashboard rendering
+function DashboardContent() {
   const [user, setUser] = useState<any>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isRegistered, setIsRegistered] = useState<boolean | null>(null);
@@ -50,9 +51,8 @@ export default function StudentDashboard() {
 
   const supabase = createClient();
   const router = useRouter();
-  const searchParams = useSearchParams(); // Read URL params
+  const searchParams = useSearchParams();
 
-  // Active 10-minute automatic logout hook
   useInactivityTimeout(isAuthenticated);
 
   useEffect(() => {
@@ -60,7 +60,6 @@ export default function StudentDashboard() {
       try {
         const { data: { user: currentUser } } = await supabase.auth.getUser();
 
-        // STRICT AUTH CHECK: Redirect if not logged in
         if (!currentUser) {
           router.replace('/login');
           return;
@@ -71,7 +70,6 @@ export default function StudentDashboard() {
 
         const paymentFlag = searchParams.get('payment');
 
-        // Check registration status from Supabase profile
         let { data: profile } = await supabase
           .from('profiles')
           .select('is_bootcamp_registered')
@@ -80,11 +78,10 @@ export default function StudentDashboard() {
 
         let registeredStatus = profile?.is_bootcamp_registered || false;
 
-        // If returned from Paystack registration but webhook is processing, poll Supabase
         if (!registeredStatus && paymentFlag === 'registered') {
           let attempts = 0;
           while (!registeredStatus && attempts < 5) {
-            await new Promise((res) => setTimeout(res, 1500)); // Wait 1.5s per attempt
+            await new Promise((res) => setTimeout(res, 1500));
             const { data: recheckProfile } = await supabase
               .from('profiles')
               .select('is_bootcamp_registered')
@@ -98,7 +95,6 @@ export default function StudentDashboard() {
 
         setIsRegistered(registeredStatus);
 
-        // Fetch ONLY paid/successful course enrollments if registered
         if (registeredStatus) {
           const { data, error } = await supabase
             .from('registrations')
@@ -121,7 +117,6 @@ export default function StudentDashboard() {
     fetchUserDataAndCourses();
   }, [supabase, router, searchParams]);
 
-  // Handle Paystack ₦1,500 Mandatory Registration
   const handlePayRegistration = async () => {
     setIsPayLoading(true);
     try {
@@ -557,5 +552,20 @@ export default function StudentDashboard() {
         </div>
       )}
     </div>
+  );
+}
+
+// Outer Page Export: Wraps DashboardContent inside a Suspense Boundary for Next.js Static Builds
+export default function StudentDashboard() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#09090b] flex items-center justify-center text-zinc-400 text-xs">
+          <Loader2 className="w-6 h-6 animate-spin text-emerald-400 mr-2" /> Loading Student Portal...
+        </div>
+      }
+    >
+      <DashboardContent />
+    </Suspense>
   );
 }
