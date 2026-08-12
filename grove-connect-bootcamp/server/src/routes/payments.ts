@@ -19,7 +19,7 @@ function getSupabaseAdmin() {
 // Course Pricing Single Source of Truth
 const COURSE_PRICES: Record<string, { name: string; price: number }> = {
   'fullstack-kids': { name: 'Full-Stack Web Engineering', price: 20000 },
-  'uiux-kids': { name: 'Graphic & Product Design', price: 15000 },
+  'uiux-kids': { name: 'Graphic & Product Design', price: 20000 },
   'python-ai': { name: 'Python AI & Data Science', price: 20000 },
   'video-editing': { name: 'Video Editing', price: 20000 },
   'music-training': { name: 'Music Training', price: 20000 },
