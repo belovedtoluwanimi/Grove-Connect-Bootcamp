@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Users,
   CreditCard,
@@ -17,33 +18,81 @@ import {
   RefreshCw,
   MoreVertical,
   ChevronDown,
+  Lock,
+  LogOut,
+  UserCheck,
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/clients';
 
 interface StudentRecord {
   id: string;
   user_id: string;
-  track: string;
+  track?: string;
+  course_name?: string;
+  student_name?: string;
+  amount_paid?: number;
+  reference?: string;
   status: 'pending' | 'approved' | 'rejected';
   payment_status: 'unpaid' | 'paid' | 'failed';
   created_at: string;
   profiles?: {
     full_name: string;
     email: string;
-    phone: string;
+    phone?: string;
+    role?: string;
   };
 }
 
 export default function AdminDashboardPage() {
   const [records, setRecords] = useState<StudentRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [authChecking, setAuthChecking] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const supabase = createClient();
+  const router = useRouter();
 
-  // Fetch all registrations joined with parent profile details
+  // 1. Strict Admin Authentication Guard
+  useEffect(() => {
+    async function verifyAdminAuth() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+          router.replace('/login');
+          return;
+        }
+
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role, is_bootcamp_registered')
+          .eq('id', user.id)
+          .single();
+
+        // Check if role is admin or email matches master admin
+        const hasAdminAccess = profile?.role === 'admin' || user.email === 'groveconn3ct22@gmail.com';
+
+        if (!hasAdminAccess) {
+          router.replace('/dashboard');
+          return;
+        }
+
+        setIsAdmin(true);
+      } catch (err) {
+        console.error('Admin verification error:', err);
+        router.replace('/dashboard');
+      } finally {
+        setAuthChecking(false);
+      }
+    }
+
+    verifyAdminAuth();
+  }, [supabase, router]);
+
+  // 2. Fetch all registrations with full details
   const fetchRegistrations = async () => {
     setLoading(true);
     try {
@@ -53,6 +102,10 @@ export default function AdminDashboardPage() {
           id,
           user_id,
           track,
+          course_name,
+          student_name,
+          amount_paid,
+          reference,
           status,
           payment_status,
           created_at,
@@ -66,48 +119,76 @@ export default function AdminDashboardPage() {
 
       if (error) throw error;
       setRecords((data as any) || []);
-    } catch (err) {
-      console.error('Error fetching registrations:', err);
+    } catch (err: any) {
+      console.error('Error fetching registrations:', err.message || err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchRegistrations();
-  }, []);
+    if (isAdmin) {
+      fetchRegistrations();
+    }
+  }, [isAdmin]);
 
-  // Update status directly in Supabase
+  // 3. Manual Approval & Status Update
   const handleStatusUpdate = async (
     id: string,
-    newStatus: 'approved' | 'rejected',
+    newStatus: 'approved' | 'rejected' | 'pending',
     newPaymentStatus?: 'paid' | 'unpaid'
   ) => {
     setUpdatingId(id);
     try {
+      const targetRecord = records.find((r) => r.id === id);
       const updateData: any = { status: newStatus };
       if (newPaymentStatus) updateData.payment_status = newPaymentStatus;
 
-      const { error } = await supabase
+      // Update registrations record
+      const { error: regError } = await supabase
         .from('registrations')
         .update(updateData)
         .eq('id', id);
 
-      if (error) throw error;
+      if (regError) throw regError;
+
+      // Also ensure the user's payments record reflects success if marked paid
+      if (newPaymentStatus === 'paid' && targetRecord?.reference) {
+        await supabase
+          .from('payments')
+          .update({ status: 'success', payment_channel: 'admin_manual_override' })
+          .eq('reference', targetRecord.reference);
+      }
+
       await fetchRegistrations();
-    } catch (err) {
-      console.error('Error updating status:', err);
+    } catch (err: any) {
+      console.error('Error updating status:', err.message || err);
+      alert(`Update failed: ${err.message || 'Check database permissions'}`);
     } finally {
       setUpdatingId(null);
     }
   };
 
+  // 4. Sign Out
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.replace('/login');
+  };
+
   // Filtered dataset calculation
   const filteredRecords = records.filter((rec) => {
+    const parentName = rec.profiles?.full_name || '';
+    const parentEmail = rec.profiles?.email || '';
+    const studentName = rec.student_name || '';
+    const courseName = rec.course_name || rec.track || '';
+    const ref = rec.reference || '';
+
     const matchesSearch =
-      rec.profiles?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      rec.profiles?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      rec.track.toLowerCase().includes(searchTerm.toLowerCase());
+      parentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      parentEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      courseName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ref.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus =
       statusFilter === 'all' ||
@@ -122,6 +203,15 @@ export default function AdminDashboardPage() {
   const paidStudents = records.filter((r) => r.payment_status === 'paid').length;
   const pendingPayments = records.filter((r) => r.payment_status === 'unpaid').length;
 
+  if (authChecking) {
+    return (
+      <div className="min-h-screen bg-[#09090b] flex flex-col items-center justify-center text-zinc-400 text-xs">
+        <Lock className="w-8 h-8 text-emerald-400 animate-pulse mb-3" />
+        Verifying Administrative Access...
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#09090b] text-zinc-100 selection:bg-emerald-500 selection:text-zinc-950">
       {/* Header */}
@@ -132,20 +222,28 @@ export default function AdminDashboardPage() {
               G
             </span>
             <span className="text-white">Grove</span>
-            <span className="text-emerald-400">Admin</span>
+            <span className="text-emerald-400 font-extrabold text-sm uppercase tracking-wider ml-1 px-2 py-0.5 bg-emerald-500/10 rounded-md border border-emerald-500/20">
+              Admin Console
+            </span>
           </Link>
 
           <div className="flex items-center gap-3">
             <button
               onClick={fetchRegistrations}
-              className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition-all"
+              className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition-all flex items-center gap-1.5 text-xs font-semibold px-3"
               title="Refresh Data"
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-emerald-400' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-emerald-400' : ''}`} />
+              <span className="hidden sm:inline">Refresh</span>
             </button>
-            <span className="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-              Live Console
-            </span>
+
+            <button
+              onClick={handleSignOut}
+              className="p-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white transition-all flex items-center gap-1.5 text-xs font-semibold px-3"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Sign Out</span>
+            </button>
           </div>
         </div>
       </header>
@@ -157,7 +255,7 @@ export default function AdminDashboardPage() {
             Student Registrations & Payments
           </h1>
           <p className="text-xs sm:text-sm text-zinc-400 mt-1">
-            Manage cohort enrollments, verify payment references, and approve registrations.
+            Manage cohort enrollments, verify payment references, and manually approve student courses.
           </p>
         </div>
 
@@ -200,7 +298,7 @@ export default function AdminDashboardPage() {
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
             <input
               type="text"
-              placeholder="Search by student, email, or track..."
+              placeholder="Search by student, email, ref, or course..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2 pl-10 pr-4 text-xs text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-emerald-500 transition-all"
@@ -215,10 +313,10 @@ export default function AdminDashboardPage() {
               className="w-full sm:w-auto bg-zinc-900 border border-zinc-800 rounded-xl py-2 px-3 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500"
             >
               <option value="all">All Statuses</option>
-              <option value="paid">Paid</option>
-              <option value="unpaid">Unpaid</option>
-              <option value="approved">Approved</option>
-              <option value="pending">Pending Approval</option>
+              <option value="paid">Payment: Paid</option>
+              <option value="unpaid">Payment: Unpaid</option>
+              <option value="approved">Status: Approved</option>
+              <option value="pending">Status: Pending</option>
             </select>
           </div>
         </div>
@@ -240,12 +338,12 @@ export default function AdminDashboardPage() {
               <table className="w-full text-left text-xs">
                 <thead className="bg-zinc-900/80 border-b border-zinc-800 text-zinc-400 uppercase tracking-wider font-semibold">
                   <tr>
-                    <th className="p-4">Parent / Contact</th>
-                    <th className="p-4">Track</th>
+                    <th className="p-4">Student & Parent</th>
+                    <th className="p-4">Course Track</th>
+                    <th className="p-4">Amount & Ref</th>
                     <th className="p-4">Payment</th>
                     <th className="p-4">Approval</th>
-                    <th className="p-4">Date</th>
-                    <th className="p-4 text-right">Actions</th>
+                    <th className="p-4 text-right">Admin Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-800/80">
@@ -254,17 +352,34 @@ export default function AdminDashboardPage() {
 
                     return (
                       <tr key={item.id} className="hover:bg-zinc-900/40 transition-colors">
+                        {/* Student & Parent */}
                         <td className="p-4">
-                          <p className="font-bold text-white">
-                            {item.profiles?.full_name || 'Student Parent'}
+                          <p className="font-bold text-white text-sm">
+                            {item.student_name || item.profiles?.full_name || 'Registered Student'}
                           </p>
-                          <p className="text-zinc-500 text-[11px]">{item.profiles?.email}</p>
+                          <p className="text-zinc-400 text-[11px] mt-0.5">
+                            Parent: {item.profiles?.full_name || 'N/A'} ({item.profiles?.email || 'No email'})
+                          </p>
                         </td>
 
-                        <td className="p-4 font-medium text-emerald-400 capitalize">
-                          {item.track.replace('-', ' ')}
+                        {/* Course Name */}
+                        <td className="p-4">
+                          <span className="font-semibold text-emerald-400">
+                            {item.course_name || item.track?.replace('-', ' ') || 'Bootcamp Track'}
+                          </span>
                         </td>
 
+                        {/* Amount & Reference */}
+                        <td className="p-4">
+                          <p className="font-bold text-zinc-200">
+                            ₦{(item.amount_paid || 0).toLocaleString()}
+                          </p>
+                          <p className="text-zinc-500 font-mono text-[10px]">
+                            {item.reference ? item.reference.substring(0, 16) : 'N/A'}
+                          </p>
+                        </td>
+
+                        {/* Payment Status */}
                         <td className="p-4">
                           {item.payment_status === 'paid' ? (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-semibold text-[10px]">
@@ -277,6 +392,7 @@ export default function AdminDashboardPage() {
                           )}
                         </td>
 
+                        {/* Approval Status */}
                         <td className="p-4">
                           <span
                             className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-semibold text-[10px] capitalize ${
@@ -291,10 +407,7 @@ export default function AdminDashboardPage() {
                           </span>
                         </td>
 
-                        <td className="p-4 text-zinc-500 font-mono">
-                          {new Date(item.created_at).toLocaleDateString()}
-                        </td>
-
+                        {/* Actions */}
                         <td className="p-4 text-right">
                           {isUpdating ? (
                             <Loader2 className="w-4 h-4 animate-spin text-emerald-400 inline-block" />
@@ -308,6 +421,16 @@ export default function AdminDashboardPage() {
                                   Approve & Mark Paid
                                 </button>
                               )}
+
+                              {item.status === 'approved' && (
+                                <button
+                                  onClick={() => handleStatusUpdate(item.id, 'pending', 'unpaid')}
+                                  className="px-2 py-1 rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-400 hover:text-white text-[10px] transition-all"
+                                >
+                                  Reset to Unpaid
+                                </button>
+                              )}
+
                               {item.status !== 'rejected' && (
                                 <button
                                   onClick={() => handleStatusUpdate(item.id, 'rejected')}
