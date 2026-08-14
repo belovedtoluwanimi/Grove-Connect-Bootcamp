@@ -139,6 +139,7 @@ router.post('/initialize', async (req: Request, res: Response) => {
 
       const { error: regError } = await supabase.from('registrations').insert({
         user_id: userId,
+        track: item.courseId,
         course_name: course.name,
         amount_paid: course.price,
         student_name: studentNameResolved,
