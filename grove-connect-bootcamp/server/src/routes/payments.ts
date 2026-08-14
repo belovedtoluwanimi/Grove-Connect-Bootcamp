@@ -57,7 +57,7 @@ router.post('/bootcamp-registration', async (req: Request, res: Response) => {
       throw new Error('PAYSTACK_SECRET_KEY is missing from environment variables.');
     }
 
-    const amountInKobo = 1 * 100; // ₦1,500 in Kobo
+    const amountInKobo = 100 * 100; // ₦1,500 in Kobo
     const paymentReference = `REG-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
 
     const response = await fetch('https://api.paystack.co/transaction/initialize', {
