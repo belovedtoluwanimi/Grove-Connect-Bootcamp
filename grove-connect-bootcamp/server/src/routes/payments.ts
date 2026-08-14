@@ -170,7 +170,7 @@ router.post('/initialize', async (req: Request, res: Response) => {
         email,
         amount: amountInKobo,
         reference: paymentReference,
-        callback_url: `${process.env.CLIENT_URL || 'http://localhost:3000'}/dashboard/payment-status`,
+        callback_url: `${process.env.CLIENT_URL || 'http://localhost:3000'}/dashboard`,
         metadata: {
           user_id: userId,
           type: 'course_enrollment',
@@ -219,6 +219,71 @@ router.post('/initialize', async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Invalid payload schema', errors: error.issues });
     }
     return res.status(500).json({ message: error.message || 'Internal server error' });
+  }
+});
+
+/**
+ * GET /api/payments/verify/:reference
+ * Directly queries Paystack API to verify and update registration state in Supabase.
+ */
+router.get('/verify/:reference', async (req: Request, res: Response) => {
+  try {
+    const { reference } = req.params;
+    const supabase = getSupabaseAdmin();
+    const paystackSecretKey = process.env.PAYSTACK_SECRET_KEY;
+
+    if (!paystackSecretKey) {
+      throw new Error('PAYSTACK_SECRET_KEY is missing from environment variables.');
+    }
+
+    // Query Paystack directly
+    const paystackRes = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${paystackSecretKey}`,
+      },
+    });
+
+    const data = await paystackRes.json();
+
+    if (!paystackRes.ok || !data.status || data.data.status !== 'success') {
+      return res.status(400).json({ status: 'failed', message: 'Payment verification failed on Paystack' });
+    }
+
+    const { channel, metadata } = data.data;
+    const paymentType = metadata?.type;
+    const userId = metadata?.user_id;
+
+    // Update database immediately
+    if (paymentType !== 'bootcamp_registration') {
+      await supabase
+        .from('registrations')
+        .update({
+          payment_status: 'paid',
+          status: 'approved',
+          payment_channel: channel || 'paystack',
+        })
+        .eq('reference', reference);
+    } else if (userId) {
+      await supabase
+        .from('profiles')
+        .update({ is_bootcamp_registered: true })
+        .eq('id', userId);
+    }
+
+    await supabase
+      .from('payments')
+      .update({
+        status: 'success',
+        payment_channel: channel || 'paystack',
+        raw_payload: data.data,
+      })
+      .eq('reference', reference);
+
+    return res.status(200).json({ status: 'success', data: data.data });
+  } catch (error: any) {
+    console.error('Verification Route Error:', error);
+    return res.status(500).json({ error: error.message || 'Internal server error' });
   }
 });
 

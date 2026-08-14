@@ -68,8 +68,20 @@ function DashboardContent() {
         setUser(currentUser);
         setIsAuthenticated(true);
 
+        const ref = searchParams.get('reference') || searchParams.get('trxref');
         const paymentFlag = searchParams.get('payment');
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://grove-connect-bootcamp.onrender.com';
 
+        // 1. INSTANT VERIFICATION: If returning from Paystack with a transaction ref, verify & update DB immediately
+        if (ref) {
+          try {
+            await fetch(`${backendUrl}/api/payments/verify/${ref}`);
+          } catch (verifyErr) {
+            console.error('Instant verification ping error:', verifyErr);
+          }
+        }
+
+        // 2. Fetch User Profile
         let { data: profile } = await supabase
           .from('profiles')
           .select('is_bootcamp_registered')
@@ -78,6 +90,7 @@ function DashboardContent() {
 
         let registeredStatus = profile?.is_bootcamp_registered || false;
 
+        // Fallback polling for the N1,500 registration fee if webhook is lagging
         if (!registeredStatus && paymentFlag === 'registered') {
           let attempts = 0;
           while (!registeredStatus && attempts < 5) {
@@ -95,20 +108,18 @@ function DashboardContent() {
 
         setIsRegistered(registeredStatus);
 
+        // 3. Fetch Course Enrollments
         if (registeredStatus) {
-          // If returning with payment query or reference, poll to ensure fresh state
-          const paymentFlag = searchParams.get('payment') || searchParams.get('reference') || searchParams.get('trxref');
-
           let { data, error } = await supabase
             .from('registrations')
             .select('*')
             .eq('user_id', currentUser.id)
             .order('created_at', { ascending: false });
 
-          // If coming from payment callback but DB webhook is still writing, poll up to 4 times
-          if (paymentFlag && data && data.some(r => r.payment_status === 'unpaid')) {
+          // If still unpaid after ref check, poll up to 3 times to allow backend write
+          if (ref && data && data.some((r) => r.payment_status === 'unpaid')) {
             let retries = 0;
-            while (retries < 4) {
+            while (retries < 3) {
               await new Promise((res) => setTimeout(res, 1500));
               const { data: refetched } = await supabase
                 .from('registrations')
@@ -116,7 +127,7 @@ function DashboardContent() {
                 .eq('user_id', currentUser.id)
                 .order('created_at', { ascending: false });
 
-              if (refetched && refetched.some(r => ['success', 'paid', 'successful'].includes(r.payment_status))) {
+              if (refetched && refetched.some((r) => ['success', 'paid', 'successful'].includes(r.payment_status))) {
                 data = refetched;
                 break;
               }
@@ -125,7 +136,6 @@ function DashboardContent() {
           }
 
           if (!error && data) {
-            // Show all registered courses for the user
             setEnrollments(data);
           }
         }
