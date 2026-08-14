@@ -78,28 +78,21 @@ router.post('/paystack', async (req: Request, res: Response) => {
       }
 
       // Branch B: Handle Course Track Purchase
-      if (userId && paymentType !== 'bootcamp_registration') {
-        const { error: regError } = await supabase
+     // Branch B: Handle Course Track Purchase
+      if (reference && paymentType !== 'bootcamp_registration') {
+        const { error: regUpdateError } = await supabase
           .from('registrations')
           .update({
             payment_status: 'paid',
             status: 'approved',
-            payment_channel: channel || 'card',
+            payment_channel: channel || 'paystack',
           })
-          .eq('user_id', userId)
           .eq('reference', reference);
 
-        if (regError) {
-          // Fallback to updating unpaid records for the user if reference isn't matched directly
-          await supabase
-            .from('registrations')
-            .update({
-              payment_status: 'paid',
-              status: 'approved',
-              payment_channel: channel || 'card',
-            })
-            .eq('user_id', userId)
-            .eq('payment_status', 'unpaid');
+        if (regUpdateError) {
+          console.error('Error updating registration status via webhook:', regUpdateError);
+        } else {
+          console.log(`✓ Registration status updated to paid for ref: ${reference}`);
         }
       }
     }

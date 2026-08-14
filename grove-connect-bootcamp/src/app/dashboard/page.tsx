@@ -96,14 +96,36 @@ function DashboardContent() {
         setIsRegistered(registeredStatus);
 
         if (registeredStatus) {
-          const { data, error } = await supabase
+          // If returning with payment query or reference, poll to ensure fresh state
+          const paymentFlag = searchParams.get('payment') || searchParams.get('reference') || searchParams.get('trxref');
+
+          let { data, error } = await supabase
             .from('registrations')
             .select('*')
             .eq('user_id', currentUser.id)
-            .in('payment_status', ['success', 'paid', 'successful'])
             .order('created_at', { ascending: false });
 
+          // If coming from payment callback but DB webhook is still writing, poll up to 4 times
+          if (paymentFlag && data && data.some(r => r.payment_status === 'unpaid')) {
+            let retries = 0;
+            while (retries < 4) {
+              await new Promise((res) => setTimeout(res, 1500));
+              const { data: refetched } = await supabase
+                .from('registrations')
+                .select('*')
+                .eq('user_id', currentUser.id)
+                .order('created_at', { ascending: false });
+
+              if (refetched && refetched.some(r => ['success', 'paid', 'successful'].includes(r.payment_status))) {
+                data = refetched;
+                break;
+              }
+              retries++;
+            }
+          }
+
           if (!error && data) {
+            // Show all registered courses for the user
             setEnrollments(data);
           }
         }
@@ -267,7 +289,7 @@ function DashboardContent() {
             >
               <MessageSquare className="w-4 h-4 text-emerald-400" /> Confirm Enrollment
             </button>
-            
+
             <Link
               href="/dashboard/course-selection"
               className="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs flex items-center gap-2 transition-all shadow-lg shadow-emerald-500/20"
@@ -321,8 +343,13 @@ function DashboardContent() {
                 >
                   <div>
                     <div className="flex items-center justify-between mb-4">
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider px-3 py-1 rounded-full border bg-emerald-500/10 text-emerald-400 border-emerald-500/30">
-                        ✓ Payment Confirmed
+                      <span className={`text-[10px] font-extrabold uppercase tracking-wider px-3 py-1 rounded-full border ${['success', 'paid', 'successful'].includes(item.payment_status?.toLowerCase())
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                          : 'bg-amber-500/10 text-amber-400 border-amber-500/30 animate-pulse'
+                        }`}>
+                        {['success', 'paid', 'successful'].includes(item.payment_status?.toLowerCase())
+                          ? '✓ Payment Confirmed'
+                          : '⏳ Verifying Payment...'}
                       </span>
 
                       <span className="text-[11px] text-zinc-500 font-mono">

@@ -18,7 +18,7 @@ function getSupabaseAdmin() {
 
 // Course Pricing Single Source of Truth
 const COURSE_PRICES: Record<string, { name: string; price: number }> = {
-  'fullstack-kids': { name: 'Full-Stack Web Engineering', price: 100 },
+  'fullstack-kids': { name: 'Full-Stack Web Engineering', price: 20000 },
   'uiux-kids': { name: 'Graphic & Product Design', price: 20000 },
   'python-ai': { name: 'Python AI & Data Science', price: 20000 },
   'video-editing': { name: 'Video Editing', price: 20000 },
@@ -57,7 +57,7 @@ router.post('/bootcamp-registration', async (req: Request, res: Response) => {
       throw new Error('PAYSTACK_SECRET_KEY is missing from environment variables.');
     }
 
-    const amountInKobo = 100 * 100; // ₦1,500 in Kobo
+    const amountInKobo = 1500 * 100; // ₦1,500 in Kobo
     const paymentReference = `REG-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
 
     const response = await fetch('https://api.paystack.co/transaction/initialize', {
